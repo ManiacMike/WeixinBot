@@ -9,6 +9,8 @@ import json
 import time, re, sys, os, random
 import multiprocessing
 import platform
+import subprocess
+
 from collections import defaultdict
 
 def catchKeyboardInterrupt(fn):
@@ -78,6 +80,8 @@ class WebWeixin(object):
 		self.ContactList = []
 		self.GroupList = []
 		self.autoReplyMode = False
+		self.apiRepyMode = True
+		self.messageApi = "http://localhost:8004/message"
 		self.syncHost = ''
 
 		opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookielib.CookieJar()))
@@ -118,7 +122,12 @@ class WebWeixin(object):
 		with open(QRCODE_PATH, 'wb') as f:
 			f.write(data)
 
-		os.startfile(QRCODE_PATH)
+		if sys.platform.find('darwin') >= 0:
+			subprocess.call(['open', QRCODE_PATH])
+		# elif sys.platform.find('linux') >= 0:
+		# 	subprocess.call(['xdg-open', QRCODE_PATH])
+		else:
+			os.startfile(QRCODE_PATH)
 
 	def waitForLogin(self, tip = 1):
 		time.sleep(tip)
@@ -382,6 +391,9 @@ class WebWeixin(object):
 							print '自动回复: '+ans
 						else:
 							print '自动回复失败'
+					elif self.apiRepyMode:
+						ans = self.getReplyByApi(content)
+						self.webwxsendmsg(ans, msg['FromUserName'])
 			elif msgType == 3:
 				image = self.webwxgetmsgimg(msgid)
 				print '%s 给你发送了一张图片: %s' % (name, image)
@@ -474,6 +486,15 @@ class WebWeixin(object):
 				print ' [失败]'
 			time.sleep(1)
 
+	def getReplyByApi(self, msg):
+		data = {}
+		data['msg'] = msg
+		url = self.messageApi
+		post_data = urllib.urlencode(data)
+		req = urllib2.urlopen(url, post_data)
+		content = req.read()
+		return content
+
 	@catchKeyboardInterrupt
 	def start(self):
 		print '[*] 微信网页版 ... 开动'
@@ -488,11 +509,11 @@ class WebWeixin(object):
 		print '[*] 共有 %d 位联系人' % len(self.ContactList)
 		if self.DEBUG: print self
 
-		if raw_input('[*] 是否开启自动回复模式(y/n): ') == 'y':
-			self.autoReplyMode = True
-			print '[*] 自动回复模式 ... 开启'
-		else:
-			print '[*] 自动回复模式 ... 关闭'
+		# if raw_input('[*] 是否开启自动回复模式(y/n): ') == 'y':
+		# 	self.autoReplyMode = True
+		# 	print '[*] 自动回复模式 ... 开启'
+		# else:
+		# 	print '[*] 自动回复模式 ... 关闭'
 
 		listenProcess = multiprocessing.Process(target=self.listenMsgMode)
 		listenProcess.start()
