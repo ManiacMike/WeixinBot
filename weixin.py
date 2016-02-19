@@ -382,7 +382,20 @@ class WebWeixin(object):
 					[people, content] = content.split(':<br/>')
 					group = self.getUserRemarkName(msg['FromUserName'])
 					name = self.getUserRemarkName(people)
-					print '|%s| %s: %s' % (group, name, content.replace('<br/>','\n'))
+					print '|||@'+self.User['NickName']+' |||'
+					print '|||'+content+'|||'
+					print(content.find('@'+self.User['NickName']+' '))
+					if content.find('@'+self.User['NickName']+' ') != -1:
+						[ifatme, realcontent] = content.split(' ')
+						print realcontent
+						ans = self.getReplyByApi(realcontent)
+						print ans
+						if self.webwxsendmsg(ans, msg['FromUserName']):
+							print 'api回复: '+ans
+						else:
+							print 'api回复失败'
+					else:
+						print content
 				else:
 					print name+': '+content
 					if self.autoReplyMode:
@@ -393,11 +406,14 @@ class WebWeixin(object):
 							print '自动回复失败'
 					elif self.apiRepyMode:
 						ans = self.getReplyByApi(content)
-						self.webwxsendmsg(ans, msg['FromUserName'])
+						if self.webwxsendmsg(ans, msg['FromUserName']):
+							print 'api回复: '+ans
+						else:
+							print 'api回复失败'
 			elif msgType == 3:
 				image = self.webwxgetmsgimg(msgid)
 				print '%s 给你发送了一张图片: %s' % (name, image)
-				self._safe_open(image)
+				#self._safe_open(image)
 			elif msgType == 34:
 				voice = self.webwxgetvoice(msgid)
 				print '%s 给你发了一段语音: %s' % (name, voice)
@@ -414,7 +430,7 @@ class WebWeixin(object):
 			elif msgType == 47:
 				url = self._searchContent('cdnurl', content)
 				print '%s 给你发了一个动画表情，点击下面链接查看:\n%s' % (name, url)
-				self._safe_open(url)
+				#self._safe_open(url)
 			elif msgType == 49:
 				appMsgType = defaultdict(lambda : "")
 				appMsgType.update({5:'链接', 3:'音乐', 7:'微博'})
