@@ -382,9 +382,7 @@ class WebWeixin(object):
 					[people, content] = content.split(':<br/>')
 					group = self.getUserRemarkName(msg['FromUserName'])
 					name = self.getUserRemarkName(people)
-					print '|||@'+self.User['NickName']+' |||'
-					print '|||'+content+'|||'
-					print(content.find('@'+self.User['NickName']+' '))
+					content = content.replace(' ',' ')
 					if content.find('@'+self.User['NickName']+' ') != -1:
 						[ifatme, realcontent] = content.split(' ')
 						print realcontent
