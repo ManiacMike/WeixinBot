@@ -10,6 +10,7 @@ import time, re, sys, os, random
 import multiprocessing
 import platform
 import subprocess
+import string
 
 from collections import defaultdict
 
@@ -46,6 +47,14 @@ def _decode_dict(data):
 			value = _decode_dict(value)
 		rv[key] = value
 	return rv
+
+def randomEmoticon():
+    happy = ("_(┐「ε:)_","_(:3 」∠)_","(￣y▽￣)~*捂嘴偷笑","・゜・(PД`q｡)・゜・","(ง •̀_•́)ง","(•̀ᴗ•́)و ̑̑","ヽ(•̀ω•́ )ゝ","(,,• ₃ •,,)","(｡˘•ε•˘｡)","(=ﾟωﾟ)ﾉ","\(○’ω’○)","(´・ω・`)","ヽ(･ω･｡)ﾉ","(。-`ω´-)","(´・ω・`)","(´・ω・)ﾉ","\(ﾉ･ω･)","  (♥ó㉨ò)ﾉ♡","(ó㉨ò)","・㉨・","( ・◇・)？","ヽ(*´Д｀*)ﾉ","\(´°̥̥̥̥̥̥̥̥ω°̥̥̥̥̥̥̥̥｀)","(╭￣3￣)╭♡","(☆ﾟ∀ﾟ)","⁄(⁄ ⁄•⁄ω⁄•⁄ ⁄)⁄.","(´-ι_-｀)","ಠ౪ಠ","ಥ_ಥ","(/≥▽≤/)","ヾ(o◕∀◕)ﾉ ヾ(o◕∀◕)ﾉ ヾ(o◕∀◕)ﾉ","\*★,°*:.☆\(￣▽￣)/$:*.°★*","ヾ (o ° ω ° O ) ノ゙","╰(*°▽°*)╯ "," (｡◕ˇ∀ˇ◕）","o(*≧▽≦)ツ","≖‿≖✧",">ㅂ<","ˋ▽ˊ","\(•ㅂ•)/♥","✪ε✪","✪υ✪","✪ω✪","눈_눈",",,Ծ‸Ծ,,","π__π","（/TДT)/","ʅ（´◔౪◔）ʃ","(｡☉౪ ⊙｡)","o(*≧▽≦)ツ┏━┓拍桌狂笑"," (●'◡'●)ﾉ♥","<(▰˘◡˘▰)>","｡◕‿◕｡","(｡・`ω´･)","(♥◠‿◠)ﾉ","ʅ(‾◡◝) "," (≖ ‿ ≖)✧","（´∀｀*)","（＾∀＾）","(o^∇^o)ﾉ","ヾ(=^▽^=)ノ","(*￣∇￣*)"," (*´∇｀*)","(*ﾟ▽ﾟ*)","(｡･ω･)ﾉﾞ","(≡ω≡．)","(｀･ω･´)","(´･ω･｀)","(●´ω｀●)φ)")
+    if int(random.random() * 1000)%5 == 0:
+        index = (int(random.random() * 1000))%len(happy)
+        return happy[index]
+    else:
+		return False
 
 class WebWeixin(object):
 	def __str__(self):
@@ -299,9 +308,10 @@ class WebWeixin(object):
 		}
 		headers = {'content-type': 'application/json; charset=UTF-8'}
 		data = json.dumps(params, ensure_ascii=False).encode('utf8')
-		r = requests.post(url, data = data, headers = headers)
-		dic = r.json()
-		return dic['BaseResponse']['Ret'] == 0
+		requests.post(url, data = data, headers = headers, timeout = 1)
+		# dic = r.json()
+		# return dic['BaseResponse']['Ret'] == 0
+		return True
 
 	def webwxgeticon(self, id):
 		url = self.base_uri + '/webwxgeticon?username=%s&skey=%s' % (id, self.skey)
@@ -348,7 +358,9 @@ class WebWeixin(object):
 		return name
 
 	def getUSerID(self, name):
+		print name
 		for member in self.MemberList:
+			print member['RemarkName'] + "|" + member['NickName']
 			if name == member['RemarkName'] or name == member['NickName']:
 				return member['UserName']
 		return None
@@ -384,9 +396,9 @@ class WebWeixin(object):
 					name = self.getUserRemarkName(people)
 					content = content.replace(' ',' ')
 					if content.find('@'+self.User['NickName']+' ') != -1:
-						[ifatme, realcontent] = content.split(' ')
+						realcontent = content.replace('@'+self.User['NickName']+' ','')
 						print realcontent
-						ans = self.getReplyByApi(realcontent)
+						ans = self.getReplyByApi(realcontent,msg['FromUserName'],self.User['NickName'])
 						print ans
 						if self.webwxsendmsg(ans, msg['FromUserName']):
 							print 'api回复: '+ans
@@ -394,6 +406,9 @@ class WebWeixin(object):
 							print 'api回复失败'
 					else:
 						print content
+						e = randomEmoticon()
+						if e:
+							self.webwxsendmsg(e, msg['FromUserName'])
 				else:
 					print name+': '+content
 					if self.autoReplyMode:
@@ -403,7 +418,7 @@ class WebWeixin(object):
 						else:
 							print '自动回复失败'
 					elif self.apiRepyMode:
-						ans = self.getReplyByApi(content)
+						ans = self.getReplyByApi(content,msg['FromUserName'],self.User['NickName'])
 						if self.webwxsendmsg(ans, msg['FromUserName']):
 							print 'api回复: '+ans
 						else:
@@ -443,6 +458,9 @@ class WebWeixin(object):
 				print name+' 给你发了一个小视频，请在手机上查看'
 			elif msgType == 10002:
 				print name+' 撤回消息'
+			elif msgType == 10000:
+				print name+'里发了红包'
+				self.webwxsendmsg('有人发红包了，大家快抢啊，我只负责通知 ಠ౪ಠ', msg['FromUserName'])
 			else:
 				print '[*] 该消息类型为: %d，可能是表情，图片或链接' % msg['MsgType']
 				print msg
@@ -453,7 +471,8 @@ class WebWeixin(object):
 		playWeChat = 0
 		while True:
 			[retcode, selector] = self.synccheck()
-			if self.DEBUG: print 'retcode: %s, selector: %s' % (retcode, selector)
+			# if self.DEBUG: print 'retcode: %s, selector: %s' % (retcode, selector)
+			print 'retcode: %s, selector: %s' % (retcode, selector)
 			if retcode == '1100':
 				print '[*] 你在手机上登出了微信，债见'
 				break
@@ -466,6 +485,9 @@ class WebWeixin(object):
 					print '[*] 你在手机上玩微信被我发现了 %d 次' % playWeChat
 					r = self.webwxsync()
 				elif selector == '0':
+					time.sleep(1)
+				elif selector == '3':
+					print r
 					time.sleep(1)
 
 	def sendMsg(self, name, word, isfile = False):
@@ -500,9 +522,11 @@ class WebWeixin(object):
 				print ' [失败]'
 			time.sleep(1)
 
-	def getReplyByApi(self, msg):
+	def getReplyByApi(self, msg, uid, myName):
 		data = {}
 		data['msg'] = msg
+		data['robot'] = myName
+		data['uid'] = uid
 		url = self.messageApi
 		post_data = urllib.urlencode(data)
 		req = urllib2.urlopen(url, post_data)
