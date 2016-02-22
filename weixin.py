@@ -406,9 +406,9 @@ class WebWeixin(object):
 							print 'api回复失败'
 					else:
 						print content
-						e = randomEmoticon()
-						if e:
-							self.webwxsendmsg(e, msg['FromUserName'])
+						# e = randomEmoticon()
+						# if e:
+						# 	self.webwxsendmsg(e, msg['FromUserName'])
 				else:
 					print name+': '+content
 					if self.autoReplyMode:
@@ -458,9 +458,9 @@ class WebWeixin(object):
 				print name+' 给你发了一个小视频，请在手机上查看'
 			elif msgType == 10002:
 				print name+' 撤回消息'
-			elif msgType == 10000:
-				print name+'里发了红包'
-				self.webwxsendmsg('有人发红包了，大家快抢啊，我只负责通知 ಠ౪ಠ', msg['FromUserName'])
+			# elif msgType == 10000:
+			# 	print name+'里发了红包'
+			# 	self.webwxsendmsg('有人发红包了，大家快抢啊，我只负责通知 ಠ౪ಠ', msg['FromUserName'])
 			else:
 				print '[*] 该消息类型为: %d，可能是表情，图片或链接' % msg['MsgType']
 				print msg
