@@ -11,6 +11,7 @@ import multiprocessing
 import platform
 import subprocess
 import string
+import math
 
 from collections import defaultdict
 
@@ -243,6 +244,50 @@ class WebWeixin(object):
 		# blabla ...
 		return True
 
+	def webgetchatroommember(self,chatroomId):
+		url = self.base_uri + '/webwxbatchgetcontact?type=ex&r=%s&pass_ticket=%s' % (int(time.time()), self.pass_ticket)
+		params = {
+			'BaseRequest': self.BaseRequest,
+			"Count": 1,
+			"List": [ {"UserName": chatroomId, "ChatRoomId":""} ]
+		}
+		dic = self._post(url, params)
+		RoomContactList = dic['ContactList'][0]['MemberList']
+		man = 0
+		woman = 0
+		members = []
+		for i in xrange(len(RoomContactList) - 1, -1, -1):
+			if isinstance(RoomContactList[i], list) == True:
+				for j in xrange(len(RoomContactList[i]) - 1, -1, -1):
+						members.append(RoomContactList[i][j]['UserName'])
+			else:
+				members.append(RoomContactList[i]['UserName'])
+		url = self.base_uri + '/webwxbatchgetcontact?type=ex&r=%s&pass_ticket=%s' % (int(time.time()), self.pass_ticket)
+		# print members
+		length = 50
+		block = int(math.ceil(len(members)/float(length)))
+		# print block
+		k = 0
+		while k<block:
+			offset = k*length
+			blockmembers = members[offset:offset+length]
+			print blockmembers
+			params = {
+				'BaseRequest': self.BaseRequest,
+				"Count": len(blockmembers),
+				"List": [ {"UserName": g, "EncryChatRoomId":chatroomId} for g in blockmembers ]
+			}
+			dic = self._post(url, params)
+			# print dic
+			userlist = dic['ContactList']
+			for i in xrange(len(userlist) - 1, -1, -1):
+				if userlist[i]['Sex'] == 1:
+					man = man+1
+				elif userlist[i]['Sex'] == 2:
+					woman = woman+1
+			k = k+1
+		return {"woman":woman,"man":man}
+
 	def testsynccheck(self):
 		SyncHost = [
 			'webpush.weixin.qq.com',
@@ -398,7 +443,11 @@ class WebWeixin(object):
 					if content.find('@'+self.User['NickName']+' ') != -1:
 						realcontent = content.replace('@'+self.User['NickName']+' ','')
 						print realcontent
-						ans = self.getReplyByApi(realcontent,msg['FromUserName'],self.User['NickName'])
+						if realcontent == "统计人数":
+							stat = self.webgetchatroommember(msg['FromUserName'])
+							ans = "据统计群里男生"+str(stat["man"])+"人，女生"+str(stat["woman"])+"人 (ó㉨ò)"
+						else:
+							ans = self.getReplyByApi(realcontent,msg['FromUserName'],self.User['NickName'])
 						print ans
 						if self.webwxsendmsg(ans, msg['FromUserName']):
 							print 'api回复: '+ans
@@ -546,7 +595,11 @@ class WebWeixin(object):
 		self._run('[*] 获取联系人 ... ', self.webwxgetcontact)
 		print '[*] 共有 %d 位联系人' % len(self.ContactList)
 		if self.DEBUG: print self
-
+		# print self.GroupList
+		# for i in xrange(len(self.GroupList) - 1, -1, -1):
+		# 	print self.GroupList[i]['PYQuanPin']
+		# 	print self.webgetchatroommember(self.GroupList[i]['UserName'])
+		# exit()
 		# if raw_input('[*] 是否开启自动回复模式(y/n): ') == 'y':
 		# 	self.autoReplyMode = True
 		# 	print '[*] 自动回复模式 ... 开启'
